@@ -1,0 +1,23 @@
+resources:
+- name: git-connection
+  type: git
+  icon: github
+  source:
+    uri: https://github.com/Apton-riyazS/Daily-updates.git
+
+jobs:
+- name: run-shellscript
+  plan:
+  - get: git-connection
+  - task: bash-test
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: busybox
+      inputs: # pass concourse-examples into this task step
+      - name: git-connection
+      run:
+        path: sh
+        args: ["git-connection/test.sh"]

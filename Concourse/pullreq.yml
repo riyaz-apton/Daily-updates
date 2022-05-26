@@ -1,0 +1,51 @@
+resource_types:
+- name: pull-request
+  type: docker-image
+  source:
+    repository: teliaoss/github-pr-resource
+
+resources:
+- name: git-test
+  type: pull-request
+  check_every: 10s
+  # webhook_token: ((webhook-token))
+  source:
+    repository:  https://github.com/aswin-apton/jenkines-test.git     
+    base_branch: master
+    access_token: ((github-access-token))
+
+jobs:
+- name: test
+  plan:
+  - get: git-test
+    trigger: true
+    version: every
+  - put: git-test
+    params:
+      path: git-test
+      status: pending
+  - task: unit-test
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: {repository: alpine/git, tag: "latest"}
+      inputs:
+        - name: git-test
+      run:
+        path: /bin/sh
+        args:
+          - -xce
+          - |
+            cd git-test
+            git log --graph --all --color --pretty=format:"%x1b[31m%h%x09%x1b[32m%d%x1b[0m%x20%s" > log.txt
+            cat log.txt
+    on_failure:
+      put: git-test
+      params:
+        path: git-test
+        status: failure
+  - put: git-test
+    params:
+      path: git-test
+      status: success
